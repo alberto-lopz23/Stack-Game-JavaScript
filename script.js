@@ -54,9 +54,9 @@ class Stage {
         this.camera.updateProjectionMatrix();
     }
 }
-
 class Block {
     constructor(block) {
+        // set size and position
         this.STATES = { ACTIVE: 'active', STOPPED: 'stopped', MISSED: 'missed' };
         this.MOVE_AMOUNT = 12;
         this.dimension = { width: 0, height: 0, depth: 0 };
@@ -65,6 +65,7 @@ class Block {
         this.index = (this.targetBlock ? this.targetBlock.index : 0) + 1;
         this.workingPlane = this.index % 2 ? 'x' : 'z';
         this.workingDimension = this.index % 2 ? 'width' : 'depth';
+        // set the dimensions from the target block, or defaults.
         this.dimension.width = this.targetBlock ? this.targetBlock.dimension.width : 10;
         this.dimension.height = this.targetBlock ? this.targetBlock.dimension.height : 2;
         this.dimension.depth = this.targetBlock ? this.targetBlock.dimension.depth : 10;
@@ -72,6 +73,7 @@ class Block {
         this.position.y = this.dimension.height * this.index;
         this.position.z = this.targetBlock ? this.targetBlock.position.z : 0;
         this.colorOffset = this.targetBlock ? this.targetBlock.colorOffset : Math.round(Math.random() * 100);
+        // set color
         if (!this.targetBlock) {
             this.color = 0x333344;
         }
@@ -82,11 +84,14 @@ class Block {
             var b = Math.sin(0.3 * offset + 4) * 55 + 200;
             this.color = new THREE.Color(r / 255, g / 255, b / 255);
         }
+        // state
         this.state = this.index > 1 ? this.STATES.ACTIVE : this.STATES.STOPPED;
+        // set direction
         this.speed = -0.1 - (this.index * 0.005);
         if (this.speed < -4)
             this.speed = -4;
         this.direction = this.speed;
+        // create block
         let geometry = new THREE.BoxGeometry(this.dimension.width, this.dimension.height, this.dimension.depth);
         geometry.applyMatrix(new THREE.Matrix4().makeTranslation(this.dimension.width / 2, this.dimension.height / 2, this.dimension.depth / 2));
         this.material = new THREE.MeshToonMaterial({ color: this.color, shading: THREE.FlatShading });
@@ -171,6 +176,7 @@ class Game {
         this.stage = new Stage();
         this.mainContainer = document.getElementById('container');
         this.scoreContainer = document.getElementById('score');
+        this.dynamicTextContainer = document.getElementById('dynamic-text'); 
         this.startButton = document.getElementById('start-button');
         this.instructions = document.getElementById('instructions');
         this.scoreContainer.innerHTML = '0';
@@ -192,17 +198,37 @@ class Game {
         });
         document.addEventListener('touchstart', e => {
             e.preventDefault();
-            // this.onAction();
-            // this triggers after click on android so you
-            // insta-lose, will figure it out later.
+            this.onAction();
         });
     }
+
+    // Add to updateScoreText for more motivation and interactive
+    updateScoreText() {
+
+         if (this.blocks.length - 1 < 20 && this.blocks.length - 1 > 0) {
+            this.dynamicTextContainer.innerHTML = '¡Y esa pajareria mi loco!'; 
+        } else if (this.blocks.length - 1 >= 20 && this.blocks.length - 1 < 40)  {
+            this.dynamicTextContainer.innerHTML = '¡Traigan una falda pa la niña!'; 
+        } else if (this.blocks.length - 1 >= 40 && this.blocks.length -1 < 60) {
+            this.dynamicTextContainer.innerHTML = '¡Diablo se ta haciendo hombre la niña!'
+        } else if (this.blocks.length - 1 >= 60 && this.blocks.length - 1 < 80) {
+            this.dynamicTextContainer.innerHTML = 'Ay ay ay. dique que el sí'
+        } else if (this.blocks.length - 1 >= 80 && this.blocks.length - 1 < 100) {
+            this.dynamicTextContainer.innerHTML = '¿Que? ¿te hacemos un cumpleaño por eso?';
+        } else {
+            this.dynamicTextContainer.innerHTML = '⚠️ Te aviso que estas en revisión por este record ⚠️' 
+        }
+        
+       
+    }
+
     updateState(newState) {
         for (let key in this.STATES)
             this.mainContainer.classList.remove(this.STATES[key]);
         this.mainContainer.classList.add(newState);
         this.state = newState;
     }
+
     onAction() {
         switch (this.state) {
             case this.STATES.READY:
@@ -216,6 +242,7 @@ class Game {
                 break;
         }
     }
+
     startGame() {
         if (this.state != this.STATES.PLAYING) {
             this.scoreContainer.innerHTML = '0';
@@ -223,6 +250,26 @@ class Game {
             this.addBlock();
         }
     }
+
+    restartGame() {
+        this.updateState(this.STATES.RESETTING);
+        let oldBlocks = this.placedBlocks.children;
+        let removeSpeed = 0.2;
+        let delayAmount = 0.02;
+        for (let i = 0; i < oldBlocks.length; i++) {
+            TweenLite.to(oldBlocks[i].scale, removeSpeed, { x: 0, y: 0, z: 0, delay: (oldBlocks.length - i) * delayAmount, ease: Power1.easeIn, onComplete: () => this.placedBlocks.remove(oldBlocks[i]) });
+            TweenLite.to(oldBlocks[i].rotation, removeSpeed, { y: 0.5, delay: (oldBlocks.length - i) * delayAmount, ease: Power1.easeIn });
+        }
+        let cameraMoveSpeed = removeSpeed * 2 + (oldBlocks.length * delayAmount);
+        this.stage.setCamera(2, cameraMoveSpeed);
+        let countdown = { value: this.blocks.length - 1 };
+        TweenLite.to(countdown, cameraMoveSpeed, { value: 0, onUpdate: () => { this.scoreContainer.innerHTML = String(Math.round(countdown.value)); } });
+        this.blocks = this.blocks.slice(0, 1);
+        setTimeout(() => {
+            this.startGame();
+        }, cameraMoveSpeed * 1000);
+    }
+
     placeBlock() {
         let currentBlock = this.blocks[this.blocks.length - 1];
         let newBlocks = currentBlock.place();
@@ -250,12 +297,15 @@ class Game {
         }
         this.addBlock();
     }
+
     addBlock() {
         let lastBlock = this.blocks[this.blocks.length - 1];
         if (lastBlock && lastBlock.state == lastBlock.STATES.MISSED) {
             return this.endGame();
         }
         this.scoreContainer.innerHTML = String(this.blocks.length - 1);
+        this.updateScoreText(); 
+
         let newKidOnTheBlock = new Block(lastBlock);
         this.newBlocks.add(newKidOnTheBlock.mesh);
         this.blocks.push(newKidOnTheBlock);
@@ -263,13 +313,16 @@ class Game {
         if (this.blocks.length >= 5)
             this.instructions.classList.add('hide');
     }
+
     endGame() {
         this.updateState(this.STATES.ENDED);
     }
+
     tick() {
         this.blocks[this.blocks.length - 1].tick();
         this.stage.render();
         requestAnimationFrame(() => { this.tick(); });
     }
 }
+
 let game = new Game();
