@@ -54,9 +54,9 @@ class Stage {
         this.camera.updateProjectionMatrix();
     }
 }
+
 class Block {
     constructor(block) {
-        // set size and position
         this.STATES = { ACTIVE: 'active', STOPPED: 'stopped', MISSED: 'missed' };
         this.MOVE_AMOUNT = 12;
         this.dimension = { width: 0, height: 0, depth: 0 };
@@ -65,7 +65,6 @@ class Block {
         this.index = (this.targetBlock ? this.targetBlock.index : 0) + 1;
         this.workingPlane = this.index % 2 ? 'x' : 'z';
         this.workingDimension = this.index % 2 ? 'width' : 'depth';
-        // set the dimensions from the target block, or defaults.
         this.dimension.width = this.targetBlock ? this.targetBlock.dimension.width : 10;
         this.dimension.height = this.targetBlock ? this.targetBlock.dimension.height : 2;
         this.dimension.depth = this.targetBlock ? this.targetBlock.dimension.depth : 10;
@@ -73,7 +72,6 @@ class Block {
         this.position.y = this.dimension.height * this.index;
         this.position.z = this.targetBlock ? this.targetBlock.position.z : 0;
         this.colorOffset = this.targetBlock ? this.targetBlock.colorOffset : Math.round(Math.random() * 100);
-        // set color
         if (!this.targetBlock) {
             this.color = 0x333344;
         }
@@ -84,14 +82,11 @@ class Block {
             var b = Math.sin(0.3 * offset + 4) * 55 + 200;
             this.color = new THREE.Color(r / 255, g / 255, b / 255);
         }
-        // state
         this.state = this.index > 1 ? this.STATES.ACTIVE : this.STATES.STOPPED;
-        // set direction
         this.speed = -0.1 - (this.index * 0.005);
         if (this.speed < -4)
             this.speed = -4;
         this.direction = this.speed;
-        // create block
         let geometry = new THREE.BoxGeometry(this.dimension.width, this.dimension.height, this.dimension.depth);
         geometry.applyMatrix(new THREE.Matrix4().makeTranslation(this.dimension.width / 2, this.dimension.height / 2, this.dimension.depth / 2));
         this.material = new THREE.MeshToonMaterial({ color: this.color, shading: THREE.FlatShading });
@@ -227,24 +222,6 @@ class Game {
             this.updateState(this.STATES.PLAYING);
             this.addBlock();
         }
-    }
-    restartGame() {
-        this.updateState(this.STATES.RESETTING);
-        let oldBlocks = this.placedBlocks.children;
-        let removeSpeed = 0.2;
-        let delayAmount = 0.02;
-        for (let i = 0; i < oldBlocks.length; i++) {
-            TweenLite.to(oldBlocks[i].scale, removeSpeed, { x: 0, y: 0, z: 0, delay: (oldBlocks.length - i) * delayAmount, ease: Power1.easeIn, onComplete: () => this.placedBlocks.remove(oldBlocks[i]) });
-            TweenLite.to(oldBlocks[i].rotation, removeSpeed, { y: 0.5, delay: (oldBlocks.length - i) * delayAmount, ease: Power1.easeIn });
-        }
-        let cameraMoveSpeed = removeSpeed * 2 + (oldBlocks.length * delayAmount);
-        this.stage.setCamera(2, cameraMoveSpeed);
-        let countdown = { value: this.blocks.length - 1 };
-        TweenLite.to(countdown, cameraMoveSpeed, { value: 0, onUpdate: () => { this.scoreContainer.innerHTML = String(Math.round(countdown.value)); } });
-        this.blocks = this.blocks.slice(0, 1);
-        setTimeout(() => {
-            this.startGame();
-        }, cameraMoveSpeed * 1000);
     }
     placeBlock() {
         let currentBlock = this.blocks[this.blocks.length - 1];
