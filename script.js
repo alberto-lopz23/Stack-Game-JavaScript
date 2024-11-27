@@ -223,21 +223,30 @@ class Game {
     }
 
     enableTouchControls() {
-        if ('ontouchstart' in document.documentElement) { // Check if touch events are supported
-            // Remove existing click listeners to avoid double events
+        if ('ontouchstart' in document.documentElement) { // Verifica si los dispositivos táctiles están soportados
+            // Elimina el listener de clic si ya existe para evitar eventos duplicados
             document.removeEventListener('click', this.clickHandler);
-
-            // Add touchstart listener
-            this.touchHandler = e => {
-                e.preventDefault(); // Prevent default touch behavior (e.g., scrolling)
+    
+            // Si ya existe el touchHandler, se elimina para no agregarlo varias veces
+            if (this.touchHandler) {
+                document.removeEventListener('touchstart', this.touchHandler);
+            }
+    
+            // Agrega el listener de touchstart
+            this.touchHandler = (e) => {
+                e.preventDefault(); // Previene el comportamiento por defecto del toque (ej. desplazamiento)
                 this.onAction();
             };
             document.addEventListener('touchstart', this.touchHandler);
-
-            // Update instructions
-            this.instructionsContainer.innerHTML = 'Toca para colocar el bloque';
+    
+            // Actualiza las instrucciones, asegurándote de que el contenedor esté definido
+            if (this.instructionsContainer) {
+                this.instructionsContainer.innerHTML = 'Toca para colocar el bloque';
+            }
         }
     }
+    
+    
 
     updateState(newState) {
         for (let key in this.STATES)
