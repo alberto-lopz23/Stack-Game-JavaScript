@@ -218,8 +218,25 @@ class Game {
         } else {
             this.dynamicTextContainer.innerHTML = '⚠️ Te aviso que estas en revisión por este record ⚠️' 
         }
-        
        
+
+    }
+
+    enableTouchControls() {
+        if ('ontouchstart' in document.documentElement) { // Check if touch events are supported
+            // Remove existing click listeners to avoid double events
+            document.removeEventListener('click', this.clickHandler);
+
+            // Add touchstart listener
+            this.touchHandler = e => {
+                e.preventDefault(); // Prevent default touch behavior (e.g., scrolling)
+                this.onAction();
+            };
+            document.addEventListener('touchstart', this.touchHandler);
+
+            // Update instructions
+            this.instructionsContainer.innerHTML = 'Toca para colocar el bloque';
+        }
     }
 
     updateState(newState) {
