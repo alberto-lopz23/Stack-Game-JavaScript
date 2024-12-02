@@ -198,7 +198,7 @@ class Game {
         });
         document.addEventListener('touchstart', e => {
             e.preventDefault();
-            this.onAction();
+            
         });
     }
 
@@ -222,42 +222,6 @@ class Game {
 
     }
 
-    enableTouchControls() {
-        if ('ontouchstart' in document.documentElement) { // Verifica si los dispositivos táctiles están soportados
-            // Elimina el listener de clic si ya existe para evitar eventos duplicados
-            document.removeEventListener('click', this.clickHandler);
-    
-            // Si ya existe el touchHandler, lo eliminamos para evitar múltiples listeners
-            if (this.touchHandler) {
-                document.removeEventListener('touchstart', this.touchHandler);
-            }
-    
-            // Flag para evitar que el clic se dispare después del toque
-            let touchHandled = false;
-    
-            // Agrega el listener de touchstart
-            this.touchHandler = (e) => {
-                e.preventDefault(); // Previene el comportamiento predeterminado (evita desplazamiento o zoom)
-                touchHandled = true; // Marcamos que el toque fue manejado
-                this.onAction(); // Ejecutamos la acción
-            };
-            document.addEventListener('touchstart', this.touchHandler);
-    
-            // Agrega el listener de click, pero solo ejecutamos la acción si no se ha manejado un toque
-            this.clickHandler = (e) => {
-                if (!touchHandled) { // Solo ejecutamos la acción si no se disparó un toque
-                    this.onAction();
-                }
-                touchHandled = false; // Reiniciamos el flag para el próximo evento
-            };
-            document.addEventListener('click', this.clickHandler);
-    
-            // Actualiza las instrucciones, asegurándote de que el contenedor esté definido
-            if (this.instructionsContainer) {
-                this.instructionsContainer.innerHTML = 'Toca para colocar el bloque';
-            }
-        }
-    }
     
     
     
